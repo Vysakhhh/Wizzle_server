@@ -127,8 +127,10 @@ exports.checkAuthentication = async (req, res) => {
 
     console.log("inside checkAuthentication");
 
+    const user=req.user
+
     try {
-        res.status(200).json(req.user)
+        res.status(200).json(user)
     }
     catch (err) {
         console.log("Error in checkAuthentication", err.message);
