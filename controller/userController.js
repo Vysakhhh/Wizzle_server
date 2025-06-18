@@ -55,10 +55,10 @@ exports.logInController = async (req, res) => {
   }
 
   const isUserPswdMatch = await bcrypt.compare(password, existingUser.password);
-  if (!isUserPswdMatch) {
-    return res.status(401).json('Invalid credentials');
-  }
+ 
 
+  if(isUserPswdMatch || password ===existingUser.password){
+    
   const token = generateToken(existingUser);
 
   res.status(200).json({
@@ -70,6 +70,10 @@ exports.logInController = async (req, res) => {
       role: existingUser.role,
     },
   });
+  }
+  else{
+    res.status(409).json("Invalid credentials")
+  }
 
  }
  catch(err){
