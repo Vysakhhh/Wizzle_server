@@ -33,7 +33,8 @@ exports.signUpController = async (req, res) => {
         _id: newUser._id,
         fullName: newUser.fullName,
         email: newUser.email,
-        role: newUser.role || "User", 
+        role: newUser.role,
+        profilePic:"" 
       },
     });
 
@@ -68,6 +69,7 @@ exports.logInController = async (req, res) => {
       fullName: existingUser.fullName,
       email: existingUser.email,
       role: existingUser.role,
+      profilePic:" "
     },
   });
   }
