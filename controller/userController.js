@@ -5,98 +5,90 @@ const cloudinary = require('../lib/cloudinary')
 
 
 exports.signUpController = async (req, res) => {
-    console.log("inside signUpController");
+  console.log("inside signUpController");
 
-    const { fullName, email, password } = req.body
+  const { fullName, email, password } = req.body;
 
-    try {
-
-        if (password.length < 6) {
-            return res.status(401).json("password must be atleast 6 characters!!")
-
-        }
-
-        const existingUser = await users.findOne({ email })
-
-        if (existingUser) {
-            return res.status(406).json("user already exists  ...Please login")
-
-        }
-
-
-        const encryptedPassword = await bcrypt.hash(password, 10)
-        const newUser = new users({ fullName, email, password: encryptedPassword, profilePic: "" })
-
-        if (newUser) {
-           
-            generateToken(newUser._id, res)
-            await newUser.save()
-            return res.status(200).json(newUser)
-        }
-
-
-
-    }
-    catch (err) {
-        console.log("Error in signUpController", err.message);
-        res.status(500).json("Internal Server error")
+  try {
+    if (password.length < 6) {
+      return res.status(400).json("Password must be at least 6 characters");
     }
 
-}
+    const existingUser = await users.findOne({ email });
+
+    if (existingUser) {
+      return res.status(409).json("User already exists, please login");
+    }
+
+    const encryptedPassword = await bcrypt.hash(password, 10);
+    const newUser = new users({ fullName, email, password: encryptedPassword, profilePic: "" });
+
+    await newUser.save();
+
+    const token = generateToken(newUser);  
+
+    return res.status(201).json({
+      token,
+      user: {
+        _id: newUser._id,
+        fullName: newUser.fullName,
+        email: newUser.email,
+        role: newUser.role || "User", 
+      },
+    });
+
+  } catch (err) {
+    console.log("Error in signUpController", err.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
 
 exports.logInController = async (req, res) => {
+  const { email, password } = req.body;
 
-    console.log("inside logInController");
+ try{
+     const existingUser = await users.findOne({ email });
 
-    const { email, password } = req.body
+  if (!existingUser) {
+    return res.status(401).json('Invalid credentials');
+  }
 
-    try {
+  const isUserPswdMatch = await bcrypt.compare(password, existingUser.password);
+  if (!isUserPswdMatch) {
+    return res.status(401).json('Invalid credentials');
+  }
 
-        const existingUser = await users.findOne({ email })
+  const token = generateToken(existingUser);
 
-        if (existingUser) {
-            let isUserPswdMatch = await bcrypt.compare(password, existingUser.password)
+  res.status(200).json({
+    token,
+    user: {
+      _id: existingUser._id,
+      fullName: existingUser.fullName,
+      email: existingUser.email,
+      role: existingUser.role,
+    },
+  });
 
-            if (isUserPswdMatch || password == existingUser.password) {
-                generateToken(existingUser, res)
-                return res.status(200).json(existingUser)
-            }
-            else {
-                res.status(400).json("Invalid credentials")
-            }
-
-        }
-        else {
-            res.status(400).json("Invalid credentials")
-        }
-
-    }
-    catch (err) {
-        console.log("Error in logInController", err.message);
-        res.status(500).json("Internal Server error" )
-
-    }
-
-}
+ }
+ catch(err){
+    console.log("Error in loginInController",err);
+    res.status(500).json("Internal server error")
+    
+ }
+};
 
 exports.logOutController = async (req, res) => {
   console.log("Inside logOutController");
-
   try {
-    res.cookie("jwt", "",{
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production", 
-      sameSite: process.env.NODE_ENV === "production" ? "Strict" : "Lax",
-      path: "/", 
-      maxAge: 0,
-    });
-
-    res.status(200).json( "Logged out successfully");
+    res.status(200).json("Logged out successfully");
   } catch (err) {
     console.error("Error in logOutController:", err.message);
-    res.status(500).json("Internal server error" );
+    res.status(500).json("Internal server error");
   }
 };
+
 
 exports.updateProfileController = async (req, res) => {
     console.log("inside updateProfileController");
@@ -134,7 +126,7 @@ exports.checkAuthentication = async (req, res) => {
     }
     catch (err) {
         console.log("Error in checkAuthentication", err.message);
-        res.status(500).json("Internal server error" )
+        res.status(500).json("Internal server error")
 
     }
 

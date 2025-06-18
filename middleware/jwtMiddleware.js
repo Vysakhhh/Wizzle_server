@@ -1,44 +1,35 @@
-const jwt = require('jsonwebtoken')
-const users = require('../model/userModel')
+const jwt = require('jsonwebtoken');
+const users = require('../model/userModel');
 
 const jwtMiddleware = async (req, res, next) => {
-    console.log("inside jwtMiddleware");
+  console.log("inside jwtMiddleware");
 
-    const token = req.cookies?.jwt
+  const authHeader = req.headers.authorization;
 
-    console.log(token);
-    
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json("Unauthorized: No token provided");
+  }
 
-    try {
+  const token = authHeader.split(' ')[1];
 
-        if (!token) {
-            return res.status(400).json("Unauthorized  ..No token provided")
-        }
-
-        const jwtResponse = jwt.verify(token, process.env.JWT_SECRET)
-        if (!jwtResponse) {
-
-            return res.status(401).json({ message: "Unauthorized ...Invalid Token" })
-
-        }
-
-        const user = await users.findById(jwtResponse.userId).select("-password")
-        if (!user) {
-            return res.status(404).json("User not found")
-        }
-
-        req.user = user
-        next()
-
-
+  try {
+    const jwtResponse = jwt.verify(token, process.env.JWT_SECRET);
+    if (!jwtResponse) {
+      return res.status(401).json("Unauthorized: Invalid token");
     }
-    catch (err) {
-        console.log("Error in jwtMiddleware", err.message);
 
-        res.status(500).json({ message: "internal server error" })
+    const user = await users.findById(jwtResponse.userId).select("-password");
+    if (!user) {
+      return res.status(404).json("User not found");
     }
-}
 
+    req.user = user;
+    next();
 
+  } catch (err) {
+    console.log("Error in jwtMiddleware", err.message);
+    res.status(401).json("Unauthorized: Token verification failed");
+  }
+};
 
-module.exports = jwtMiddleware
+module.exports = jwtMiddleware;

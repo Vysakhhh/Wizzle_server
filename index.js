@@ -4,14 +4,13 @@ require('dotenv').config()
 const userRoutes = require('./routes/userRoutes')
 const adminRoutes = require('./routes/adminRoutes')
 require('./db/db_connection')
-const cookieParser = require('cookie-parser')
 const { wServer, server } = require('./lib/socket');
 
 
 wServer.use(express.json())
-wServer.use(cookieParser())
 wServer.use(cors({
-    origin: ["http://localhost:5173",
+    origin: [
+        "http://localhost:5173",
         "https://wizzle-frontend.vercel.app"],
 
     credentials: true,
